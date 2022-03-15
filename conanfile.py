@@ -18,8 +18,6 @@ class EmboLibRecipe(ConanFile):
     options = { "shared": [True, False] }
     default_options = { "shared": False }
 
-    generators = "CMakeToolchain", "CMakeDeps"
-
     revision_mode = "scm"
     scm = {
         "type": "git",
