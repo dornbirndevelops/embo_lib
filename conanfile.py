@@ -15,8 +15,8 @@ class EmboLibRecipe(ConanFile):
     topics = ("conan", "embo", "example")
 
     settings = "os", "compiler", "build_type", "arch"
-    options = { "shared": [True, False] }
-    default_options = { "shared": False }
+    options = { "shared": [True, False], "fPIC": [True, False] }
+    default_options = { "shared": False, "fPIC": True }
 
     revision_mode = "scm"
     scm = {
@@ -24,6 +24,10 @@ class EmboLibRecipe(ConanFile):
         "url": "auto",
         "revision": "auto"
     }
+
+    def config_options(self):
+        if self.settings.os == "Windows":
+            del self.options.fPIC
 
     def build_requirements(self):
         self.test_requires("gtest/[^1.11.0]@")
