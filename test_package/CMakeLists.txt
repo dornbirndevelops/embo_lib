@@ -8,9 +8,6 @@ if(NOT APPLE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH on)
 endif()
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
-
 add_executable(${PROJECT_NAME})
 
 target_sources(${PROJECT_NAME}
@@ -18,7 +15,8 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/embo_app.cc
 )
 
+find_package(embo_lib REQUIRED)
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        ${CONAN_LIBS}
+        embo_lib::embo_lib
 )

@@ -1,5 +1,8 @@
-from conans import ConanFile, CMake
-from conans.tools import cross_building
+from conan import ConanFile
+from conan.tools.build import cross_building
+from conan.tools.cmake import CMake, cmake_layout, CMakeToolchain, CMakeDeps
+from conan.tools.files import copy
+from os.path import join
 
 class EmboLibRecipe(ConanFile):
     name = "embo_lib"
@@ -15,7 +18,7 @@ class EmboLibRecipe(ConanFile):
     options = { "shared": [True, False] }
     default_options = { "shared": False }
 
-    generators = "cmake_find_package"
+    generators = "CMakeToolchain", "CMakeDeps"
 
     revision_mode = "scm"
     scm = {
@@ -31,6 +34,26 @@ class EmboLibRecipe(ConanFile):
     def requirements(self):
         self.requires("fmt/[^8.1.1]@")
 
+    def layout(self):
+        cmake_layout(self)
+
+        self.cpp.source.includedirs = ["include"]
+        self.cpp.build.includedirs = ["."] # generated export headers
+        self.cpp.build.libs = ["embo_lib"]
+        self.cpp.package.includedirs = ["include"]
+        self.cpp.package.libs = ["embo_lib"]
+        self.cpp.package.libdirs = ["lib"]
+        self.cpp.package.bindirs = ["bin"]
+
+    def generate(self):
+        CMakeToolchain(self).generate()
+        CMakeDeps(self).generate()
+        bindir = join(self.build_folder, self.cpp.build.bindirs[0])
+        for dep in self.dependencies.values():
+            copy(self, "*.dll", dep.cpp_info.bindirs[0], bindir)
+            copy(self, "*.dylib*", dep.cpp_info.libdirs[0], bindir)
+            copy(self, "*.so*", dep.cpp_info.libdirs[0], bindir)
+
     def build(self):
         cmake = CMake(self)
         cmake.configure()
@@ -41,6 +64,3 @@ class EmboLibRecipe(ConanFile):
     def package(self):
         cmake = CMake(self)
         cmake.install()
-
-    def package_info(self):
-        self.cpp_info.libs = ["embo_lib"]

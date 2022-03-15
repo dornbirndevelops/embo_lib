@@ -1,10 +1,14 @@
-from conans import ConanFile, CMake
-from conans.tools import cross_building
+from conan import ConanFile
+from conan.tools.build import cross_building
+from conan.tools.cmake import CMake, cmake_layout
 from os.path import join
 
 class EmboLibTestRecipe(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
-    generators = "cmake"
+    generators = "CMakeToolchain", "CMakeDeps"
+
+    def layout(self):
+        cmake_layout(self)
 
     def build(self):
         cmake = CMake(self)
@@ -13,4 +17,5 @@ class EmboLibTestRecipe(ConanFile):
 
     def test(self):
         if not cross_building(self):
-            self.run(join("bin", "embo_app"), run_environment=True)
+            executable = join(self.cpp.build.bindirs[0], "embo_app")
+            self.run(executable, run_environment=True)
