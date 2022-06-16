@@ -3,9 +3,11 @@ project(embo_lib CXX)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN yes)
-if(NOT APPLE)
-    set(CMAKE_INSTALL_RPATH $ORIGIN)
-endif()
+
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH $ORIGIN)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 add_library(${PROJECT_NAME})
 
@@ -49,7 +51,7 @@ install(TARGETS ${PROJECT_NAME})
 
 if(NOT CMAKE_CROSSCOMPILING)
     add_executable(${PROJECT_NAME}_test)
-    
+
     target_sources(${PROJECT_NAME}_test
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/test/embo_lib_test.cc

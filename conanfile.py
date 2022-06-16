@@ -1,8 +1,5 @@
-from conan import ConanFile
-from conan.tools.build import cross_building
-from conan.tools.cmake import CMake, cmake_layout, CMakeToolchain, CMakeDeps
-from conan.tools.files import copy
-from os.path import join
+from conans import ConanFile, CMake
+from conans.tools import cross_building
 
 class EmboLibRecipe(ConanFile):
     name = "embo_lib"
@@ -14,10 +11,6 @@ class EmboLibRecipe(ConanFile):
     description = "demo project for Embo++ conference containing an example library implementation using Conan"
     topics = ("conan", "embo", "example")
 
-    settings = "os", "compiler", "build_type", "arch"
-    options = { "shared": [True, False], "fPIC": [True, False] }
-    default_options = { "shared": False, "fPIC": True }
-
     revision_mode = "scm"
     scm = {
         "type": "git",
@@ -25,44 +18,43 @@ class EmboLibRecipe(ConanFile):
         "revision": "auto"
     }
 
-    def config_options(self):
-        if self.settings.os == "Windows":
-            del self.options.fPIC
+    no_copy_source = True
+
+    settings = "os", "compiler", "build_type", "arch"
+    options = { "shared": [True, False] }
+    default_options = { "shared": False }
+
+    generators = "cmake_find_package"
 
     def build_requirements(self):
         self.test_requires("gtest/[^1.11.0]@")
-        # self.tool_requires("protobuf/[^3.19.2]@")
+        # self.tool_requires("cmake/[^3.23.1]@")
 
     def requirements(self):
         self.requires("fmt/[^8.1.1]@")
 
-    def layout(self):
-        cmake_layout(self)
+    def imports(self):
+        self.copy("*.dll", src="@bindirs", dst=str(self.settings.build_type))
+        self.copy("*.dylib*", src="@libdirs", dst="lib")
 
-        self.cpp.source.includedirs = ["include"]
-        self.cpp.build.includedirs = ["."] # generated export headers
-        self.cpp.build.libs = ["embo_lib"]
-        self.cpp.package.includedirs = ["include"]
-        self.cpp.package.libs = ["embo_lib"]
-        self.cpp.package.libdirs = ["lib"]
-        self.cpp.package.bindirs = ["bin"]
-
-    def generate(self):
-        CMakeToolchain(self).generate()
-        CMakeDeps(self).generate()
-        bindir = join(self.build_folder, self.cpp.build.bindirs[0])
-        for dep in self.dependencies.values():
-            copy(self, "*.dll", dep.cpp_info.bindirs[0], bindir)
-            copy(self, "*.dylib*", dep.cpp_info.libdirs[0], bindir)
-            copy(self, "*.so*", dep.cpp_info.libdirs[0], bindir)
+    def _get_configured_cmake(self):
+        cmake = CMake(self)
+        cmake.definitions["CMAKE_CONFIGURATION_TYPES"] = str(self.settings.build_type)
+        cmake.configure()
+        return cmake
 
     def build(self):
-        cmake = CMake(self)
-        cmake.configure()
+        cmake = self._get_configured_cmake()
         cmake.build()
         if not cross_building(self, skip_x64_x86=True):
             cmake.test()
 
     def package(self):
-        cmake = CMake(self)
+        cmake = self._get_configured_cmake()
         cmake.install()
+
+    def package_info(self):
+        self.cpp_info.includedirs = ['include']
+        self.cpp_info.libs = ['embo_lib']
+        self.cpp_info.libdirs = ['lib']
+        self.cpp_info.bindirs = ['bin']
